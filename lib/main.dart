@@ -30,54 +30,68 @@ class CalculatorHomePage extends StatefulWidget {
 }
 
 class _CalculatorHomePageState extends State<CalculatorHomePage> {
-  // Novas variáveis de estado
   String expression = "";
   String result = "0";
+  // ✅ NOVA VARIÁVEL PARA O RESULTADO EM TEMPO REAL
+  String liveResult = "";
 
-  // Nova lógica de pressionar o botão
+  // ✅ NOVA FUNÇÃO PARA CALCULAR O RESULTADO EM TEMPO REAL
+  void _calculateLiveResult() {
+    // Não tenta calcular se a expressão estiver vazia ou terminar com um operador
+    if (expression.isEmpty || "+-x/".contains(expression.substring(expression.length - 1))) {
+      // Se a expressão terminar com operador, limpamos o preview
+      if(liveResult.isNotEmpty && expression.isNotEmpty) {
+        setState(() {
+          liveResult = "";
+        });
+      }
+      return;
+    }
+
+    try {
+      String finalExpression = expression.replaceAll('x', '*');
+      Parser p = Parser();
+      Expression exp = p.parse(finalExpression);
+      ContextModel cm = ContextModel();
+      double eval = exp.evaluate(EvaluationType.REAL, cm);
+
+      setState(() {
+        if (eval == eval.toInt()) {
+          liveResult = "= ${eval.toInt()}";
+        } else {
+          liveResult = "= ${eval.toString()}";
+        }
+      });
+    } catch (e) {
+      // Se der erro no cálculo, não faz nada
+    }
+  }
+
   void buttonPressed(String buttonText) {
     setState(() {
       if (buttonText == "C") {
         expression = "";
         result = "0";
+        liveResult = "";
       } else if (buttonText == "=") {
-        try {
-          // Prepara a expressão para ser calculada
-          String finalExpression = expression;
-          finalExpression = finalExpression.replaceAll('x', '*'); // Troca 'x' por '*'
-
-          // Usa o pacote math_expressions para calcular
-          Parser p = Parser();
-          Expression exp = p.parse(finalExpression);
-          ContextModel cm = ContextModel();
-          double eval = exp.evaluate(EvaluationType.REAL, cm);
-
-          // Formata o resultado
-          if (eval == eval.toInt()) {
-            result = eval.toInt().toString();
-          } else {
-            result = eval.toString();
-          }
-        } catch (e) {
-          result = "Erro";
+        // Se já tiver um preview, usa ele como resultado final
+        if (liveResult.isNotEmpty) {
+          result = liveResult.substring(2); // Remove o "= "
+          expression = "";
+          liveResult = "";
         }
       } else {
-        // Se o resultado atual for "0" ou "Erro", começa uma nova expressão
-        if (result != "0" && expression == "") {
-           expression = result;
+        if (result != "0" && expression.isEmpty) {
+          expression = result == "Erro" ? "" : result;
+          result = "0"; // Limpa o resultado principal
         }
         
-        // Se o valor inicial é "0", substitui pelo botão pressionado
-        if (expression == "0") {
-            expression = buttonText;
-        } else {
-            expression = expression + buttonText;
-        }
+        expression += buttonText;
+        _calculateLiveResult(); // Chama a função de preview
       }
     });
   }
 
-  // Widget para construir cada botão (continua o mesmo)
   Widget buildButton(String buttonText, Color textColor, Color buttonColor) {
     return Expanded(
       child: Container(
@@ -108,7 +122,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Definindo as cores para o tema escuro (continua o mesmo)
     const Color bgColor = Color(0xFF1C1C1E);
     const Color numberButtonColor = Color(0xFF505050);
     const Color operatorButtonColor = Color(0xFFFF9500);
@@ -121,7 +134,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            // ✅ NOVO VISOR COM DUAS LINHAS
             Expanded(
               flex: 2,
               child: Container(
@@ -131,21 +143,21 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // A expressão/conta
+                    // ✅ VISOR ATUALIZADO
+                    // A expressão/conta principal
                     Text(
-                      expression.isEmpty ? " " : expression,
-                      style: const TextStyle(fontSize: 48.0, color: Colors.white60),
+                      expression.isEmpty ? result : expression,
+                      style: const TextStyle(fontSize: 48.0, color: Colors.white, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
-                    // O resultado
+                    // O resultado em tempo real (fraco)
                     Text(
-                      result,
+                      liveResult,
                       style: const TextStyle(
-                        fontSize: 72.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        fontSize: 36.0,
+                        color: Colors.white60,
                       ),
                        maxLines: 1,
                        overflow: TextOverflow.ellipsis,
@@ -154,7 +166,7 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                 ),
               ),
             ),
-            // Linha de botões (continua o mesmo)
+            // Linhas de botões
             Expanded(
               flex: 5,
               child: Column(
@@ -163,13 +175,13 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                     child: Row(
                       children: <Widget>[
                         buildButton("C", topTextColor, topButtonColor),
-                        buildButton("()", topTextColor, topButtonColor), // Apenas visual
-                        buildButton("%", topTextColor, topButtonColor),  // Apenas visual
+                        buildButton("()", topTextColor, topButtonColor),
+                        buildButton("%", topTextColor, topButtonColor),
                         buildButton("/", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),
-                  Expanded(
+                   Expanded(
                     child: Row(
                       children: <Widget>[
                         buildButton("7", defaultTextColor, numberButtonColor),
@@ -217,3 +229,4 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
     );
   }
 }
+

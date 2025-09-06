@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package.flutter/material.dart';
 
 void main() {
   runApp(const CalculatorApp());
@@ -35,6 +35,8 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
   double num1 = 0;
   double num2 = 0;
   String operand = "";
+  // Variável para saber se um operador foi pressionado
+  bool operandPressed = false;
 
   // Função chamada quando qualquer botão é pressionado
   void buttonPressed(String buttonText) {
@@ -45,49 +47,72 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
         num1 = 0;
         num2 = 0;
         operand = "";
+        operandPressed = false;
+        // ATUALIZA O VISOR
+        output = _output;
       } else if (buttonText == "+" || buttonText == "-" || buttonText == "/" || buttonText == "x") {
         // Se um operador é pressionado
-        num1 = double.parse(output);
-        operand = buttonText;
-        _output = "0";
+        // Evita erro se o usuário clicar em um operador duas vezes
+        if (operand.isEmpty || !operandPressed) {
+          num1 = double.parse(output);
+          operand = buttonText;
+          operandPressed = true;
+        }
       } else if (buttonText == ".") {
         // Se o ponto decimal é pressionado
-        if (!_output.contains(".")) {
+        if (operandPressed) {
+          _output = "0.";
+          operandPressed = false;
+        } else if (!_output.contains(".")) {
           _output = _output + buttonText;
         }
+        // ATUALIZA O VISOR
+        output = _output;
       } else if (buttonText == "=") {
         // Se o botão de igual é pressionado
-        num2 = double.parse(output);
+        if(operand.isNotEmpty){
+          num2 = double.parse(output);
 
-        if (operand == "+") {
-          _output = (num1 + num2).toString();
-        }
-        if (operand == "-") {
-          _output = (num1 - num2).toString();
-        }
-        if (operand == "x") {
-          _output = (num1 * num2).toString();
-        }
-        if (operand == "/") {
-          _output = (num1 / num2).toString();
-        }
+          if (operand == "+") {
+            _output = (num1 + num2).toString();
+          }
+          if (operand == "-") {
+            _output = (num1 - num2).toString();
+          }
+          if (operand == "x") {
+            _output = (num1 * num2).toString();
+          }
+          if (operand == "/") {
+            // Evita divisão por zero
+            if (num2 == 0) {
+              _output = "Erro";
+            } else {
+              _output = (num1 / num2).toString();
+            }
+          }
 
-        num1 = 0;
-        num2 = 0;
-        operand = "";
+          num1 = 0;
+          num2 = 0;
+          operand = "";
+          
+          // Remove o ".0" de resultados inteiros e ATUALIZA O VISOR
+          if (_output != "Erro" && _output.endsWith(".0")) {
+            output = _output.replaceAll(".0", "");
+          } else {
+            output = _output;
+          }
+
+          _output = output == "Erro" ? "0" : output; // Guarda o resultado para futuras operações
+        }
       } else {
         // Se um número é pressionado
-        if (_output == "0") {
-          _output = buttonText;
+        if (operandPressed || _output == "0") {
+            _output = buttonText;
+            operandPressed = false;
         } else {
-          _output = _output + buttonText;
+            _output = _output + buttonText;
         }
-      }
-
-      // Remove o ".0" de resultados inteiros para ficar mais limpo
-      if (_output.endsWith(".0")) {
-        output = _output.replaceAll(".0", "");
-      } else {
+        // ATUALIZA O VISOR
         output = _output;
       }
     });

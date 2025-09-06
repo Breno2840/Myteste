@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✅ 1. IMPORTADO PARA O FEEDBACK DE VIBRAÇÃO
 import 'package:math_expressions/math_expressions.dart';
 
 void main() {
@@ -32,38 +33,34 @@ class CalculatorHomePage extends StatefulWidget {
 class _CalculatorHomePageState extends State<CalculatorHomePage> {
   String expression = "";
   String result = "0";
-  // ✅ NOVA VARIÁVEL PARA O RESULTADO EM TEMPO REAL
   String liveResult = "";
+  // ✅ 2. LISTA PARA GUARDAR O HISTÓRICO
+  List<String> history = [];
 
-  // ✅ NOVA FUNÇÃO PARA CALCULAR O RESULTADO EM TEMPO REAL
   void _calculateLiveResult() {
-    // Não tenta calcular se a expressão estiver vazia ou terminar com um operador
     if (expression.isEmpty || "+-x/".contains(expression.substring(expression.length - 1))) {
-      // Se a expressão terminar com operador, limpamos o preview
-      if(liveResult.isNotEmpty && expression.isNotEmpty) {
+      if (liveResult.isNotEmpty && expression.isNotEmpty) {
         setState(() {
           liveResult = "";
         });
       }
       return;
     }
-
     try {
       String finalExpression = expression.replaceAll('x', '*');
       Parser p = Parser();
       Expression exp = p.parse(finalExpression);
       ContextModel cm = ContextModel();
       double eval = exp.evaluate(EvaluationType.REAL, cm);
-
       setState(() {
         if (eval == eval.toInt()) {
           liveResult = "= ${eval.toInt()}";
         } else {
-          liveResult = "= ${eval.toString()}";
+          liveResult = "= ${eval.toStringAsFixed(2)}";
         }
       });
     } catch (e) {
-      // Se der erro no cálculo, não faz nada
+      // Ignora erros no preview
     }
   }
 
@@ -74,22 +71,67 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
         result = "0";
         liveResult = "";
       } else if (buttonText == "=") {
-        // Se já tiver um preview, usa ele como resultado final
         if (liveResult.isNotEmpty) {
-          result = liveResult.substring(2); // Remove o "= "
+          String finalResult = liveResult.substring(2);
+          // ✅ 3. SALVA A CONTA NO HISTÓRICO
+          history.insert(0, "$expression = $finalResult");
+          result = finalResult;
           expression = "";
           liveResult = "";
         }
       } else {
         if (result != "0" && expression.isEmpty) {
           expression = result == "Erro" ? "" : result;
-          result = "0"; // Limpa o resultado principal
+          result = "0";
         }
-        
         expression += buttonText;
-        _calculateLiveResult(); // Chama a função de preview
+        _calculateLiveResult();
       }
     });
+  }
+  
+  // ✅ 5. FUNÇÃO PARA MOSTRAR O PAINEL DE HISTÓRICO
+  void _showHistory() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF505050),
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "Histórico",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const Divider(color: Colors.white24, height: 1),
+            Expanded(
+              child: history.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "Nenhum histórico ainda.",
+                        style: TextStyle(fontSize: 18, color: Colors.white60),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: history.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return ListTile(
+                          title: Text(
+                            history[index],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 22),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget buildButton(String buttonText, Color textColor, Color buttonColor) {
@@ -101,7 +143,11 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
           borderRadius: BorderRadius.circular(24.0),
           child: InkWell(
             borderRadius: BorderRadius.circular(24.0),
-            onTap: () => buttonPressed(buttonText),
+            onTap: () {
+              // ✅ 4. ADICIONA A VIBRAÇÃO AQUI
+              HapticFeedback.lightImpact();
+              buttonPressed(buttonText);
+            },
             splashColor: Colors.white.withOpacity(0.2),
             highlightColor: Colors.white.withOpacity(0.1),
             child: Center(
@@ -131,6 +177,18 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      // ✅ 6. APPBAR COM O BOTÃO DE HISTÓRICO
+      appBar: AppBar(
+        title: const Text("Calculadora", style: TextStyle(color: Colors.white)),
+        backgroundColor: bgColor,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            onPressed: _showHistory,
+          )
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -143,8 +201,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // ✅ VISOR ATUALIZADO
-                    // A expressão/conta principal
                     Text(
                       expression.isEmpty ? result : expression,
                       style: const TextStyle(fontSize: 48.0, color: Colors.white, fontWeight: FontWeight.bold),
@@ -152,7 +208,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 10),
-                    // O resultado em tempo real (fraco)
                     Text(
                       liveResult,
                       style: const TextStyle(
@@ -229,4 +284,3 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
     );
   }
 }
-

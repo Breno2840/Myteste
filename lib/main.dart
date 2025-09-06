@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:math_expressions/math_expressions.dart';
 
 void main() {
   runApp(const CalculatorApp());
@@ -29,91 +30,54 @@ class CalculatorHomePage extends StatefulWidget {
 }
 
 class _CalculatorHomePageState extends State<CalculatorHomePage> {
-  // Variáveis para guardar o estado da calculadora
-  String output = "0"; // O que é exibido na tela
-  String _output = "0"; // Variável interna para cálculos
-  double num1 = 0;
-  double num2 = 0;
-  String operand = "";
-  // Variável para saber se um operador foi pressionado
-  bool operandPressed = false;
+  // Novas variáveis de estado
+  String expression = "";
+  String result = "0";
 
-  // Função chamada quando qualquer botão é pressionado
+  // Nova lógica de pressionar o botão
   void buttonPressed(String buttonText) {
     setState(() {
       if (buttonText == "C") {
-        // Limpa tudo
-        _output = "0";
-        num1 = 0;
-        num2 = 0;
-        operand = "";
-        operandPressed = false;
-        // ATUALIZA O VISOR
-        output = _output;
-      } else if (buttonText == "+" || buttonText == "-" || buttonText == "/" || buttonText == "x") {
-        // Se um operador é pressionado
-        if (operand.isEmpty || !operandPressed) {
-          num1 = double.parse(output);
-          operand = buttonText;
-          operandPressed = true;
-        }
-      } else if (buttonText == ".") {
-        // Se o ponto decimal é pressionado
-        if (operandPressed) {
-          _output = "0.";
-          operandPressed = false;
-        } else if (!_output.contains(".")) {
-          _output = _output + buttonText;
-        }
-        output = _output;
+        expression = "";
+        result = "0";
       } else if (buttonText == "=") {
-        // Se o botão de igual é pressionado
-        if (operand.isNotEmpty) {
-          num2 = double.parse(output);
+        try {
+          // Prepara a expressão para ser calculada
+          String finalExpression = expression;
+          finalExpression = finalExpression.replaceAll('x', '*'); // Troca 'x' por '*'
 
-          if (operand == "+") {
-            _output = (num1 + num2).toString();
-          }
-          if (operand == "-") {
-            _output = (num1 - num2).toString();
-          }
-          if (operand == "x") {
-            _output = (num1 * num2).toString();
-          }
-          if (operand == "/") {
-            if (num2 == 0) {
-              _output = "Erro";
-            } else {
-              _output = (num1 / num2).toString();
-            }
-          }
+          // Usa o pacote math_expressions para calcular
+          Parser p = Parser();
+          Expression exp = p.parse(finalExpression);
+          ContextModel cm = ContextModel();
+          double eval = exp.evaluate(EvaluationType.REAL, cm);
 
-          num1 = 0;
-          num2 = 0;
-          operand = "";
-
-          if (_output != "Erro" && _output.endsWith(".0")) {
-            output = _output.replaceAll(".0", "");
+          // Formata o resultado
+          if (eval == eval.toInt()) {
+            result = eval.toInt().toString();
           } else {
-            output = _output;
+            result = eval.toString();
           }
-
-          _output = output == "Erro" ? "0" : output;
+        } catch (e) {
+          result = "Erro";
         }
       } else {
-        // Se um número é pressionado
-        if (operandPressed || _output == "0") {
-          _output = buttonText;
-          operandPressed = false;
-        } else {
-          _output = _output + buttonText;
+        // Se o resultado atual for "0" ou "Erro", começa uma nova expressão
+        if (result != "0" && expression == "") {
+           expression = result;
         }
-        output = _output;
+        
+        // Se o valor inicial é "0", substitui pelo botão pressionado
+        if (expression == "0") {
+            expression = buttonText;
+        } else {
+            expression = expression + buttonText;
+        }
       }
     });
   }
 
-  // Widget para construir cada botão
+  // Widget para construir cada botão (continua o mesmo)
   Widget buildButton(String buttonText, Color textColor, Color buttonColor) {
     return Expanded(
       child: Container(
@@ -144,38 +108,53 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Definindo as cores para o tema escuro
-    const Color bgColor = Color(0xFF1C1C1E); // Fundo
-    const Color displayColor = Colors.white; // Cor do texto do visor
-    const Color numberButtonColor = Color(0xFF505050); // Botões de número
-    const Color numberTextColor = Colors.white;
-    const Color operatorButtonColor = Color(0xFFFF9500); // Botões de operador (laranja)
-    const Color operatorTextColor = Colors.white;
-    const Color topButtonColor = Color(0xFFD4D4D2); // Botões de cima (C, +/-, %)
+    // Definindo as cores para o tema escuro (continua o mesmo)
+    const Color bgColor = Color(0xFF1C1C1E);
+    const Color numberButtonColor = Color(0xFF505050);
+    const Color operatorButtonColor = Color(0xFFFF9500);
+    const Color topButtonColor = Color(0xFFD4D4D2);
     const Color topTextColor = Colors.black;
+    const Color defaultTextColor = Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            // Visor da calculadora
+            // ✅ NOVO VISOR COM DUAS LINHAS
             Expanded(
               flex: 2,
               child: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 12.0),
-                child: Text(
-                  output,
-                  style: const TextStyle(
-                    fontSize: 72.0,
-                    fontWeight: FontWeight.bold,
-                    color: displayColor,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                alignment: Alignment.bottomRight,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // A expressão/conta
+                    Text(
+                      expression.isEmpty ? " " : expression,
+                      style: const TextStyle(fontSize: 48.0, color: Colors.white60),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    // O resultado
+                    Text(
+                      result,
+                      style: const TextStyle(
+                        fontSize: 72.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                       maxLines: 1,
+                       overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ),
-            // Linha de botões
+            // Linha de botões (continua o mesmo)
             Expanded(
               flex: 5,
               child: Column(
@@ -184,48 +163,48 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                     child: Row(
                       children: <Widget>[
                         buildButton("C", topTextColor, topButtonColor),
-                        buildButton("+/-", topTextColor, topButtonColor),
-                        buildButton("%", topTextColor, topButtonColor),
-                        buildButton("/", operatorTextColor, operatorButtonColor),
+                        buildButton("()", topTextColor, topButtonColor), // Apenas visual
+                        buildButton("%", topTextColor, topButtonColor),  // Apenas visual
+                        buildButton("/", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),
                   Expanded(
                     child: Row(
                       children: <Widget>[
-                        buildButton("7", numberTextColor, numberButtonColor),
-                        buildButton("8", numberTextColor, numberButtonColor),
-                        buildButton("9", numberTextColor, numberButtonColor),
-                        buildButton("x", operatorTextColor, operatorButtonColor),
+                        buildButton("7", defaultTextColor, numberButtonColor),
+                        buildButton("8", defaultTextColor, numberButtonColor),
+                        buildButton("9", defaultTextColor, numberButtonColor),
+                        buildButton("x", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),
                   Expanded(
                     child: Row(
                       children: <Widget>[
-                        buildButton("4", numberTextColor, numberButtonColor),
-                        buildButton("5", numberTextColor, numberButtonColor),
-                        buildButton("6", numberTextColor, numberButtonColor),
-                        buildButton("-", operatorTextColor, operatorButtonColor),
+                        buildButton("4", defaultTextColor, numberButtonColor),
+                        buildButton("5", defaultTextColor, numberButtonColor),
+                        buildButton("6", defaultTextColor, numberButtonColor),
+                        buildButton("-", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),
                   Expanded(
                     child: Row(
                       children: <Widget>[
-                        buildButton("1", numberTextColor, numberButtonColor),
-                        buildButton("2", numberTextColor, numberButtonColor),
-                        buildButton("3", numberTextColor, numberButtonColor),
-                        buildButton("+", operatorTextColor, operatorButtonColor),
+                        buildButton("1", defaultTextColor, numberButtonColor),
+                        buildButton("2", defaultTextColor, numberButtonColor),
+                        buildButton("3", defaultTextColor, numberButtonColor),
+                        buildButton("+", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),
                   Expanded(
                     child: Row(
                       children: <Widget>[
-                        Expanded(flex: 2, child: buildButton("0", numberTextColor, numberButtonColor)),
-                        buildButton(".", numberTextColor, numberButtonColor),
-                        buildButton("=", operatorTextColor, operatorButtonColor),
+                        Expanded(flex: 2, child: buildButton("0", defaultTextColor, numberButtonColor)),
+                        buildButton(".", defaultTextColor, numberButtonColor),
+                        buildButton("=", defaultTextColor, operatorButtonColor),
                       ],
                     ),
                   ),

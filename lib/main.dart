@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package.flutter/services.dart';
 import 'package:math_expressions/math_expressions.dart';
 
 void main() {
@@ -69,7 +69,15 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
         expression = "";
         result = "0";
         liveResult = "";
-      } else if (buttonText == "=") {
+      } 
+      // Lógica para o botão de apagar
+      else if (buttonText == "backspace") {
+        if (expression.isNotEmpty) {
+          expression = expression.substring(0, expression.length - 1);
+          _calculateLiveResult(); // Recalcula o preview
+        }
+      }
+      else if (buttonText == "=") {
         if (liveResult.isNotEmpty) {
           String finalResult = liveResult.substring(2);
           history.insert(0, "$expression = $finalResult");
@@ -93,7 +101,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
       context: context,
       backgroundColor: const Color(0xFF505050),
       builder: (BuildContext context) {
-        // Usamos um StatefulWidget aqui para que a tela de histórico possa ser atualizada (ao limpar)
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Column(
@@ -108,11 +115,9 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                         "Histórico",
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      // ✅ 1. BOTÃO DE LIMPAR HISTÓRICO
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.white),
                         onPressed: history.isEmpty ? null : () {
-                          // Mostra um diálogo de confirmação
                           showDialog(
                             context: context,
                             builder: (BuildContext ctx) {
@@ -129,7 +134,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                                   TextButton(
                                     child: const Text('Limpar', style: TextStyle(color: Colors.red)),
                                     onPressed: () {
-                                      // Atualiza a tela do modal e a tela principal
                                       setModalState(() {
                                         history.clear();
                                       });
@@ -164,10 +168,8 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(color: Colors.white, fontSize: 22),
                               ),
-                              // ✅ 2. AÇÃO DE COPIAR AO TOCAR
                               onTap: () {
                                 Clipboard.setData(ClipboardData(text: history[index]));
-                                // Fecha o painel e mostra a confirmação
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Cálculo copiado para a área de transferência!')),
@@ -185,6 +187,7 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
     );
   }
 
+  // ✅ WIDGET DO BOTÃO ATUALIZADO PARA USAR O ÍCONE
   Widget buildButton(String buttonText, Color textColor, Color buttonColor) {
     return Expanded(
       child: Container(
@@ -201,14 +204,16 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
             splashColor: Colors.white.withOpacity(0.2),
             highlightColor: Colors.white.withOpacity(0.1),
             child: Center(
-              child: Text(
-                buttonText,
-                style: TextStyle(
-                  fontSize: 32.0,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
+              child: buttonText == "backspace"
+                  ? Icon(Icons.backspace_outlined, color: textColor, size: 30)
+                  : Text(
+                      buttonText,
+                      style: TextStyle(
+                        fontSize: 32.0,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -270,7 +275,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                 ),
               ),
             ),
-            // Linhas de botões
             Expanded(
               flex: 5,
               child: Column(
@@ -279,7 +283,8 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                     child: Row(
                       children: <Widget>[
                         buildButton("C", topTextColor, topButtonColor),
-                        buildButton("()", topTextColor, topButtonColor),
+                        // ✅ BOTÃO DE APAGAR COM O NOVO ÍCONE
+                        buildButton("backspace", topTextColor, topButtonColor),
                         buildButton("%", topTextColor, topButtonColor),
                         buildButton("/", defaultTextColor, operatorButtonColor),
                       ],

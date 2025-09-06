@@ -14,7 +14,6 @@ jobs:
     name: 🏗️ Build Android APK
     runs-on: ubuntu-latest
 
-    # ✅ CORREÇÃO: Dando permissão para o job criar a Release.
     permissions:
       contents: write
 
@@ -28,12 +27,12 @@ jobs:
           flutter-version: '3.22.2'
           cache: true
 
+      # ✅ PASSO ADICIONADO PARA MAIOR SEGURANÇA
+      - name: 🧼 Limpar o Projeto (flutter clean)
+        run: flutter clean
+
       - name: 🧩 Instalar Dependências (flutter pub get)
         run: flutter pub get
-
-      # Desativamos o passo de teste, conforme sua necessidade.
-      # - name: 🧪 Executar Testes (Opcional, mas recomendado!)
-      #   run: flutter test
 
       - name: ⚙️ Buildar o APK de Release
         run: flutter build apk --release

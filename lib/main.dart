@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // ✅ 1. IMPORTADO PARA O FEEDBACK DE VIBRAÇÃO
+import 'package:flutter/services.dart';
 import 'package:math_expressions/math_expressions.dart';
 
 void main() {
@@ -34,7 +34,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
   String expression = "";
   String result = "0";
   String liveResult = "";
-  // ✅ 2. LISTA PARA GUARDAR O HISTÓRICO
   List<String> history = [];
 
   void _calculateLiveResult() {
@@ -73,7 +72,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
       } else if (buttonText == "=") {
         if (liveResult.isNotEmpty) {
           String finalResult = liveResult.substring(2);
-          // ✅ 3. SALVA A CONTA NO HISTÓRICO
           history.insert(0, "$expression = $finalResult");
           result = finalResult;
           expression = "";
@@ -89,46 +87,99 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
       }
     });
   }
-  
-  // ✅ 5. FUNÇÃO PARA MOSTRAR O PAINEL DE HISTÓRICO
+
   void _showHistory() {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF505050),
       builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Histórico",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            const Divider(color: Colors.white24, height: 1),
-            Expanded(
-              child: history.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "Nenhum histórico ainda.",
-                        style: TextStyle(fontSize: 18, color: Colors.white60),
+        // Usamos um StatefulWidget aqui para que a tela de histórico possa ser atualizada (ao limpar)
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, right: 8.0, top: 8.0, bottom: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Histórico",
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: history.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        return ListTile(
-                          title: Text(
-                            history[index],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontSize: 22),
+                      // ✅ 1. BOTÃO DE LIMPAR HISTÓRICO
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.white),
+                        onPressed: history.isEmpty ? null : () {
+                          // Mostra um diálogo de confirmação
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext ctx) {
+                              return AlertDialog(
+                                title: const Text('Limpar Histórico'),
+                                content: const Text('Você tem certeza que deseja apagar todo o histórico?'),
+                                actions: [
+                                  TextButton(
+                                    child: const Text('Cancelar'),
+                                    onPressed: () {
+                                      Navigator.of(ctx).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: const Text('Limpar', style: TextStyle(color: Colors.red)),
+                                    onPressed: () {
+                                      // Atualiza a tela do modal e a tela principal
+                                      setModalState(() {
+                                        history.clear();
+                                      });
+                                      setState(() {});
+                                      Navigator.of(ctx).pop();
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: Colors.white24, height: 1),
+                Expanded(
+                  child: history.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Nenhum histórico ainda.",
+                            style: TextStyle(fontSize: 18, color: Colors.white60),
                           ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                        )
+                      : ListView.builder(
+                          itemCount: history.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            return ListTile(
+                              title: Text(
+                                history[index],
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 22),
+                              ),
+                              // ✅ 2. AÇÃO DE COPIAR AO TOCAR
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: history[index]));
+                                // Fecha o painel e mostra a confirmação
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Cálculo copiado para a área de transferência!')),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -144,7 +195,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
           child: InkWell(
             borderRadius: BorderRadius.circular(24.0),
             onTap: () {
-              // ✅ 4. ADICIONA A VIBRAÇÃO AQUI
               HapticFeedback.lightImpact();
               buttonPressed(buttonText);
             },
@@ -177,7 +227,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      // ✅ 6. APPBAR COM O BOTÃO DE HISTÓRICO
       appBar: AppBar(
         title: const Text("Calculadora", style: TextStyle(color: Colors.white)),
         backgroundColor: bgColor,

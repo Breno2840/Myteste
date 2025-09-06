@@ -1,4 +1,4 @@
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 
 void main() {
   runApp(const CalculatorApp());
@@ -52,7 +52,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
         output = _output;
       } else if (buttonText == "+" || buttonText == "-" || buttonText == "/" || buttonText == "x") {
         // Se um operador é pressionado
-        // Evita erro se o usuário clicar em um operador duas vezes
         if (operand.isEmpty || !operandPressed) {
           num1 = double.parse(output);
           operand = buttonText;
@@ -66,11 +65,10 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
         } else if (!_output.contains(".")) {
           _output = _output + buttonText;
         }
-        // ATUALIZA O VISOR
         output = _output;
       } else if (buttonText == "=") {
         // Se o botão de igual é pressionado
-        if(operand.isNotEmpty){
+        if (operand.isNotEmpty) {
           num2 = double.parse(output);
 
           if (operand == "+") {
@@ -83,7 +81,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
             _output = (num1 * num2).toString();
           }
           if (operand == "/") {
-            // Evita divisão por zero
             if (num2 == 0) {
               _output = "Erro";
             } else {
@@ -94,25 +91,23 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
           num1 = 0;
           num2 = 0;
           operand = "";
-          
-          // Remove o ".0" de resultados inteiros e ATUALIZA O VISOR
+
           if (_output != "Erro" && _output.endsWith(".0")) {
             output = _output.replaceAll(".0", "");
           } else {
             output = _output;
           }
 
-          _output = output == "Erro" ? "0" : output; // Guarda o resultado para futuras operações
+          _output = output == "Erro" ? "0" : output;
         }
       } else {
         // Se um número é pressionado
         if (operandPressed || _output == "0") {
-            _output = buttonText;
-            operandPressed = false;
+          _output = buttonText;
+          operandPressed = false;
         } else {
-            _output = _output + buttonText;
+          _output = _output + buttonText;
         }
-        // ATUALIZA O VISOR
         output = _output;
       }
     });
@@ -189,8 +184,8 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                     child: Row(
                       children: <Widget>[
                         buildButton("C", topTextColor, topButtonColor),
-                        buildButton("+/-", topTextColor, topButtonColor), // Função não implementada, apenas visual
-                        buildButton("%", topTextColor, topButtonColor),  // Função não implementada, apenas visual
+                        buildButton("+/-", topTextColor, topButtonColor),
+                        buildButton("%", topTextColor, topButtonColor),
                         buildButton("/", operatorTextColor, operatorButtonColor),
                       ],
                     ),
@@ -228,7 +223,6 @@ class _CalculatorHomePageState extends State<CalculatorHomePage> {
                   Expanded(
                     child: Row(
                       children: <Widget>[
-                        // Botão "0" ocupando dois espaços
                         Expanded(flex: 2, child: buildButton("0", numberTextColor, numberButtonColor)),
                         buildButton(".", numberTextColor, numberButtonColor),
                         buildButton("=", operatorTextColor, operatorButtonColor),
